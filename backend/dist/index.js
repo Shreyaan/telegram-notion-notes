@@ -42,13 +42,34 @@ const configuration = new openai_1.Configuration({
 });
 const openai = new openai_1.OpenAIApi(configuration);
 async function generateText(inputFileName) {
+    console.log("generating text");
     const resp = await openai.createTranscription(fs_1.default.createReadStream(inputFileName), "whisper-1");
-    return resp.data.text;
+    let textToSummarize = resp.data.text;
+    const completion = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            {
+                role: "user",
+                content: `please summarize this text and give it in bullet points \n ${textToSummarize},`,
+            },
+        ],
+    });
+    const summary = completion.data.choices[0].message?.content;
+    console.log(textToSummarize);
+    return `${summary}
+  
+transcript:
+${textToSummarize}
+
+
+  `;
 }
 async function audioConversion(inputFileName, messageId) {
     const outputFileName = `./temp/${messageId}/audio.mp3`;
     return new Promise((resolve, reject) => {
-        (0, fluent_ffmpeg_1.default)(inputFileName)
+        (0, fluent_ffmpeg_1.default)()
+            .input(inputFileName)
             .format("mp3")
             .output(outputFileName)
             .on("end", () => {
@@ -113,9 +134,10 @@ function deleteTempFolder() {
     try {
         const tempDir = "./temp";
         const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
-        const subdirs = fs_1.default.readdirSync(tempDir, { withFileTypes: true })
-            .filter(dirent => dirent.isDirectory())
-            .map(dirent => dirent.name);
+        const subdirs = fs_1.default
+            .readdirSync(tempDir, { withFileTypes: true })
+            .filter((dirent) => dirent.isDirectory())
+            .map((dirent) => dirent.name);
         subdirs.forEach((subdir) => {
             const subdirPath = path.join(tempDir, subdir);
             const stats = fs_1.default.statSync(subdirPath);
