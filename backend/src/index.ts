@@ -29,9 +29,8 @@ async function generateText(inputFileName: any) {
   return resp.data.text;
 }
 
-async function audioConversion(inputFileName: string) {
-  const outputFileName = "./output.mp3";
-
+async function audioConversion(inputFileName: string, messageId: string) {
+  const outputFileName = `./${messageId}/audio.mp3`;
   return new Promise((resolve, reject) => {
     ffmpeg(inputFileName)
       .format("mp3")
@@ -46,6 +45,21 @@ async function audioConversion(inputFileName: string) {
       })
       .run();
   });
+}
+
+function saveStream(
+  voiceMessageStream: { pipe: (arg0: fs.WriteStream) => void },
+  messageId: string
+) {
+  // create folder with messageId name
+  const dir = `./${messageId}`;
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+  const filePath = `${dir}/audio.ogg`;
+  const fileStream = fs.createWriteStream(filePath);
+  voiceMessageStream.pipe(fileStream);
+  return filePath;
 }
 
 bot.start((ctx) => {
@@ -69,11 +83,15 @@ bot.on("voice", async (ctx) => {
     const { data: voiceMessageStream } = await axios(fileUrl, {
       responseType: "stream",
     });
-    const filePath = "audio.ogg"; // Change the file path and name as you like
-    const fileStream = fs.createWriteStream(filePath);
-    voiceMessageStream.pipe(fileStream);
 
-    let text = await generateText(await audioConversion(filePath));
+    let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
+    console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
+
+    const filePath = saveStream(voiceMessageStream, messageId);
+
+    let text = await generateText(await audioConversion(filePath, messageId));
+    //delete folder
+    fs.rmdirSync(`./${messageId}`, { recursive: true });
     ctx.telegram.sendMessage(ctx.message.chat.id, text);
   } catch (error) {
     console.log(error);

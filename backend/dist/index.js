@@ -44,8 +44,8 @@ async function generateText(inputFileName) {
     const resp = await openai.createTranscription(fs_1.default.createReadStream(inputFileName), "whisper-1");
     return resp.data.text;
 }
-async function audioConversion(inputFileName) {
-    const outputFileName = "./output.mp3";
+async function audioConversion(inputFileName, messageId) {
+    const outputFileName = `./${messageId}/audio.mp3`;
     return new Promise((resolve, reject) => {
         (0, fluent_ffmpeg_1.default)(inputFileName)
             .format("mp3")
@@ -60,6 +60,17 @@ async function audioConversion(inputFileName) {
         })
             .run();
     });
+}
+function saveStream(voiceMessageStream, messageId) {
+    // create folder with messageId name
+    const dir = `./${messageId}`;
+    if (!fs_1.default.existsSync(dir)) {
+        fs_1.default.mkdirSync(dir);
+    }
+    const filePath = `${dir}/audio.ogg`;
+    const fileStream = fs_1.default.createWriteStream(filePath);
+    voiceMessageStream.pipe(fileStream);
+    return filePath;
 }
 bot.start((ctx) => {
     ctx.reply("Hello " + ctx.from.first_name + "!");
@@ -76,10 +87,12 @@ bot.on("voice", async (ctx) => {
         const { data: voiceMessageStream } = await (0, axios_1.default)(fileUrl, {
             responseType: "stream",
         });
-        const filePath = "audio.ogg"; // Change the file path and name as you like
-        const fileStream = fs_1.default.createWriteStream(filePath);
-        voiceMessageStream.pipe(fileStream);
-        let text = await generateText(await audioConversion(filePath));
+        let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
+        console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
+        const filePath = saveStream(voiceMessageStream, messageId);
+        let text = await generateText(await audioConversion(filePath, messageId));
+        //delete folder
+        fs_1.default.rmdirSync(`./${messageId}`, { recursive: true });
         ctx.telegram.sendMessage(ctx.message.chat.id, text);
     }
     catch (error) {
