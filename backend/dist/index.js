@@ -32,6 +32,7 @@ const telegraf_1 = require("telegraf");
 const openai_1 = require("openai");
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = __importDefault(require("fs"));
+const path = require("path");
 const ffmpeg_1 = require("@ffmpeg-installer/ffmpeg");
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
 fluent_ffmpeg_1.default.setFfmpegPath(ffmpeg_1.path);
@@ -45,7 +46,7 @@ async function generateText(inputFileName) {
     return resp.data.text;
 }
 async function audioConversion(inputFileName, messageId) {
-    const outputFileName = `./${messageId}/audio.mp3`;
+    const outputFileName = `./temp/${messageId}/audio.mp3`;
     return new Promise((resolve, reject) => {
         (0, fluent_ffmpeg_1.default)(inputFileName)
             .format("mp3")
@@ -62,16 +63,21 @@ async function audioConversion(inputFileName, messageId) {
     });
 }
 function saveStream(voiceMessageStream, messageId) {
-    // create folder with messageId name
-    const dir = `./${messageId}`;
+    // create temporary directory
+    const tempDir = "./temp";
+    const dir = path.join(tempDir, messageId);
+    if (!fs_1.default.existsSync(tempDir)) {
+        fs_1.default.mkdirSync(tempDir);
+    }
     if (!fs_1.default.existsSync(dir)) {
         fs_1.default.mkdirSync(dir);
     }
-    const filePath = `${dir}/audio.ogg`;
+    const filePath = path.join(dir, "audio.ogg");
     const fileStream = fs_1.default.createWriteStream(filePath);
     voiceMessageStream.pipe(fileStream);
     return filePath;
 }
+let isTempBeingUsed = false;
 bot.start((ctx) => {
     ctx.reply("Hello " + ctx.from.first_name + "!");
 });
@@ -81,6 +87,7 @@ bot.help((ctx) => {
     ctx.reply("Send /quit to stop the bot");
 });
 bot.on("voice", async (ctx) => {
+    isTempBeingUsed = true;
     try {
         ctx.telegram.sendMessage(ctx.message.chat.id, "Processing voice message ...");
         const { href: fileUrl } = await ctx.telegram.getFileLink(ctx.message.voice.file_id);
@@ -92,14 +99,42 @@ bot.on("voice", async (ctx) => {
         const filePath = saveStream(voiceMessageStream, messageId);
         let text = await generateText(await audioConversion(filePath, messageId));
         //delete folder
-        fs_1.default.rmdirSync(`./${messageId}`, { recursive: true });
+        fs_1.default.rmdirSync(`./temp/${messageId}`, { recursive: true });
         ctx.telegram.sendMessage(ctx.message.chat.id, text);
+        isTempBeingUsed = false;
     }
     catch (error) {
         console.log(error);
         ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
+        isTempBeingUsed = false;
     }
 });
+function deleteTempFolder() {
+    try {
+        const tempDir = "./temp";
+        const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+        const subdirs = fs_1.default.readdirSync(tempDir, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+        subdirs.forEach((subdir) => {
+            const subdirPath = path.join(tempDir, subdir);
+            const stats = fs_1.default.statSync(subdirPath);
+            const lastModifiedTime = stats.mtime.getTime();
+            if (lastModifiedTime < cutoffTime) {
+                fs_1.default.rmdirSync(subdirPath, { recursive: true });
+                console.log(`Deleted directory: ${subdirPath}`);
+            }
+        });
+    }
+    catch (err) {
+        console.error(`Error deleting temporary directory: ${err.message}`);
+    }
+}
+setInterval(() => {
+    if (!isTempBeingUsed) {
+        deleteTempFolder();
+    }
+}, 1000 * 60 * 60);
 let domain = process.env.DOMAIN;
 let port = process.env.PORT;
 if (domain === undefined) {

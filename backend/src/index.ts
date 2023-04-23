@@ -6,6 +6,7 @@ import { message } from "telegraf/filters";
 import { Configuration, OpenAIApi } from "openai";
 import axios from "axios";
 import fs from "fs";
+const path = require("path");
 import { path as ffmpegPath } from "@ffmpeg-installer/ffmpeg";
 import ffmpeg from "fluent-ffmpeg";
 
@@ -30,7 +31,7 @@ async function generateText(inputFileName: any) {
 }
 
 async function audioConversion(inputFileName: string, messageId: string) {
-  const outputFileName = `./${messageId}/audio.mp3`;
+  const outputFileName = `./temp/${messageId}/audio.mp3`;
   return new Promise((resolve, reject) => {
     ffmpeg(inputFileName)
       .format("mp3")
@@ -51,16 +52,22 @@ function saveStream(
   voiceMessageStream: { pipe: (arg0: fs.WriteStream) => void },
   messageId: string
 ) {
-  // create folder with messageId name
-  const dir = `./${messageId}`;
+  // create temporary directory
+  const tempDir = "./temp";
+  const dir = path.join(tempDir, messageId);
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir);
+  }
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
   }
-  const filePath = `${dir}/audio.ogg`;
+  const filePath = path.join(dir, "audio.ogg");
   const fileStream = fs.createWriteStream(filePath);
   voiceMessageStream.pipe(fileStream);
   return filePath;
 }
+
+let isTempBeingUsed = false;
 
 bot.start((ctx) => {
   ctx.reply("Hello " + ctx.from.first_name + "!");
@@ -72,6 +79,7 @@ bot.help((ctx) => {
 });
 
 bot.on("voice", async (ctx) => {
+  isTempBeingUsed = true;
   try {
     ctx.telegram.sendMessage(
       ctx.message.chat.id,
@@ -90,14 +98,46 @@ bot.on("voice", async (ctx) => {
     const filePath = saveStream(voiceMessageStream, messageId);
 
     let text = await generateText(await audioConversion(filePath, messageId));
+
     //delete folder
-    fs.rmdirSync(`./${messageId}`, { recursive: true });
+    fs.rmdirSync(`./temp/${messageId}`, { recursive: true });
     ctx.telegram.sendMessage(ctx.message.chat.id, text);
+    isTempBeingUsed = false;
   } catch (error) {
     console.log(error);
     ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
+    isTempBeingUsed = false;
   }
 });
+
+
+function deleteTempFolder() {
+  try {
+    const tempDir = "./temp";
+    const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+    const subdirs = fs.readdirSync(tempDir, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+    subdirs.forEach((subdir) => {
+      const subdirPath = path.join(tempDir, subdir);
+      const stats = fs.statSync(subdirPath);
+      const lastModifiedTime = stats.mtime.getTime();
+      if (lastModifiedTime < cutoffTime) {
+        fs.rmdirSync(subdirPath, { recursive: true });
+        console.log(`Deleted directory: ${subdirPath}`);
+      }
+    });
+  } catch (err : any) {
+    console.error(`Error deleting temporary directory: ${err.message}`);
+  }
+}
+
+setInterval(() => {
+  if (!isTempBeingUsed) {
+    deleteTempFolder();
+  }
+}, 1000 * 60 * 60);
+
 
 let domain = process.env.DOMAIN;
 let port = process.env.PORT;
