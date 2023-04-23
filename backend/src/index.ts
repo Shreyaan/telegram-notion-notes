@@ -71,7 +71,7 @@ async function audioConversion(inputFileName: string, messageId: string) {
   });
 }
 
-function saveStream(
+async function saveStream(
   voiceMessageStream: { pipe: (arg0: fs.WriteStream) => void },
   messageId: string
 ) {
@@ -84,10 +84,19 @@ function saveStream(
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
   }
-  const filePath = path.join(dir, "audio.ogg");
+  const filePath: string = path.join(dir, "audio.ogg");
   const fileStream = fs.createWriteStream(filePath);
   voiceMessageStream.pipe(fileStream);
-  return filePath;
+  return new Promise((resolve, reject) => {
+    fileStream.on("finish", () => {
+      console.log("File saved successfully");
+      resolve(filePath);
+    });
+    fileStream.on("error", (err) => {
+      console.error(`Error saving file: ${err.message}`);
+      reject("error");
+    });
+  });
 }
 
 let isTempBeingUsed = false;
@@ -118,7 +127,7 @@ bot.on("voice", async (ctx) => {
     let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
     console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
 
-    const filePath = saveStream(voiceMessageStream, messageId);
+    const filePath = await saveStream(voiceMessageStream, messageId)  as string;
 
     let text = await generateText(await audioConversion(filePath, messageId));
 

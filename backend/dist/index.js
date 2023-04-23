@@ -83,7 +83,7 @@ async function audioConversion(inputFileName, messageId) {
             .run();
     });
 }
-function saveStream(voiceMessageStream, messageId) {
+async function saveStream(voiceMessageStream, messageId) {
     // create temporary directory
     const tempDir = "./temp";
     const dir = path.join(tempDir, messageId);
@@ -96,7 +96,16 @@ function saveStream(voiceMessageStream, messageId) {
     const filePath = path.join(dir, "audio.ogg");
     const fileStream = fs_1.default.createWriteStream(filePath);
     voiceMessageStream.pipe(fileStream);
-    return filePath;
+    return new Promise((resolve, reject) => {
+        fileStream.on("finish", () => {
+            console.log("File saved successfully");
+            resolve(filePath);
+        });
+        fileStream.on("error", (err) => {
+            console.error(`Error saving file: ${err.message}`);
+            reject("error");
+        });
+    });
 }
 let isTempBeingUsed = false;
 bot.start((ctx) => {
@@ -117,7 +126,7 @@ bot.on("voice", async (ctx) => {
         });
         let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
         console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
-        const filePath = saveStream(voiceMessageStream, messageId);
+        const filePath = await saveStream(voiceMessageStream, messageId);
         let text = await generateText(await audioConversion(filePath, messageId));
         //delete folder
         fs_1.default.rmdirSync(`./temp/${messageId}`, { recursive: true });
