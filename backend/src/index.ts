@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
-import { Context, Markup, Telegraf } from "telegraf";
-import { Update } from "typegram";
+import { Context, Markup, NarrowedContext, Telegraf } from "telegraf";
+import { Message, Update } from "typegram";
 import { message } from "telegraf/filters";
 import { Configuration, OpenAIApi } from "openai";
 import axios from "axios";
@@ -101,8 +101,6 @@ async function saveStream(
   });
 }
 
-
-
 bot.start((ctx) => {
   ctx.reply("Hello " + ctx.from.first_name + "!");
 });
@@ -113,37 +111,16 @@ bot.help((ctx) => {
 });
 
 bot.on("voice", async (ctx) => {
-  isTempBeingUsed = true;
   try {
     ctx.telegram.sendMessage(
       ctx.message.chat.id,
       "Processing voice message ..."
     );
-    const { href: fileUrl } = await ctx.telegram.getFileLink(
-      ctx.message.voice.file_id
-    );
-    const { data: voiceMessageStream } = await axios(fileUrl, {
-      responseType: "stream",
-    });
-
-    let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
-    console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
-
-    const filePath = (await saveStream(
-      voiceMessageStream,
-      messageId
-    )) as string;
-
-    let textToSend = await generateText(await audioConversion(filePath, messageId));
-
-    //delete folder
-    fs.rmdirSync(`./temp/${messageId}`, { recursive: true });
+    let textToSend = await processAudioFileToText(ctx);
     ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
-    isTempBeingUsed = false;
   } catch (error) {
     console.log(error);
     ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
-    isTempBeingUsed = false;
   }
 });
 
@@ -217,4 +194,42 @@ if (process.env.NODE_ENV === "production") {
   });
 } else {
   bot.launch();
+}
+
+async function processAudioFileToText(
+  ctx: NarrowedContext<
+    Context<Update>,
+    {
+      message: Update.New & Update.NonChannel & Message.VoiceMessage;
+      update_id: number;
+    }
+  >
+) {
+  isTempBeingUsed = true;
+  let textToSend = "";
+
+  try {
+    const { href: fileUrl } = await ctx.telegram.getFileLink(
+      ctx.message.voice.file_id
+    );
+    const { data: voiceMessageStream } = await axios(fileUrl, {
+      responseType: "stream",
+    });
+
+    let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
+    console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
+
+    const filePath = (await saveStream(
+      voiceMessageStream,
+      messageId
+    )) as string;
+    textToSend = await generateText(await audioConversion(filePath, messageId));
+    //delete folder
+    fs.rmdirSync(`./temp/${messageId}`, { recursive: true });
+    isTempBeingUsed = false;
+  } catch (error) {
+    textToSend = "Something went wrong";
+    isTempBeingUsed = false;
+  }
+  return textToSend;
 }
