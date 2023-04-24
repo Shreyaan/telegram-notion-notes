@@ -10,6 +10,8 @@ export async function downloadFile(
   return axios({
     method: "get",
     url: fileUrl,
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
     responseType: "stream",
   }).then((response) => {
     //ensure that the user can call `then()` only when the file has
