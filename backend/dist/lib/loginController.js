@@ -20,7 +20,7 @@ function loginController(userid, ctx) {
         .catch((error) => {
         console.error(error);
     });
-    ctx.replyWithHTML(`Please login with Notion using this button to use this bot.`, {
+    ctx.replyWithHTML(`Please login with Notion using this button to use this bot. After logging in, please use /selectNotionDb command to select a Notion database to save your notes to.`, {
         reply_markup: {
             inline_keyboard: [
                 [

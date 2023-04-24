@@ -1,1 +1,1 @@
-{"version":3,"file":"sendHelpCommands.js","sourceRoot":"","sources":["../../src/utils/sendHelpCommands.ts"],"names":[],"mappings":";;;AAGA,SAAgB,gBAAgB,CAC9B,GAMC;IAED,+DAA+D;IAC/D,GAAG,CAAC,KAAK,CACP;;wDAEoD,CACrD,CAAC;AACJ,CAAC;AAfD,4CAeC"}
+{"version":3,"file":"sendHelpCommands.js","sourceRoot":"","sources":["../../src/utils/sendHelpCommands.ts"],"names":[],"mappings":";;;AAGA,SAAgB,gBAAgB,CAC9B,GAMC;IAED,+DAA+D;IAC/D,GAAG,CAAC,KAAK,CACP;;;;2EAIuE,CACxE,CAAC;AACJ,CAAC;AAjBD,4CAiBC"}

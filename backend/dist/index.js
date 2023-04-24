@@ -68,9 +68,9 @@ bot.help((ctx) => {
 //login
 bot.command("login", async (ctx) => {
     let userid = ctx.from.id;
-    let username = ctx.from.username;
+    let username = ctx.from.username || ctx.from.first_name;
     console.log(userid, username);
-    if (userid === undefined || username === undefined) {
+    if (userid === undefined) {
         ctx.reply("Something went wrong");
         return;
     }
@@ -138,7 +138,7 @@ bot.on("voice", async (ctx) => {
                     ctx.telegram.sendMessage(ctx.message.chat.id, (0, generateOutputForMsg_1.generateOutputForMsg)(textToSend));
                     //save to notion
                     if (user.pageId === undefined) {
-                        return ctx.reply("Please set your db id first. Send /selectNotionDb to set your page id.");
+                        return ctx.reply("Save to notion failed because you have not selected a Notion database yet. Please select a database using /selectNotionDb command");
                     }
                     else if (typeof user.pageId === "string") {
                         (0, saveToNotion_1.saveToNotion)(user, textToSend, ctx);

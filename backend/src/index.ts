@@ -147,7 +147,7 @@ bot.on("voice", async (ctx) => {
             //save to notion
             if (user.pageId === undefined) {
               return ctx.reply(
-                "Please set your db id first. Send /selectNotionDb to set your page id."
+                "Save to notion failed because you have not selected a Notion database yet. Please select a database using /selectNotionDb command"
               );
             } else if (typeof user.pageId === "string") {
               saveToNotion(user, textToSend, ctx);
