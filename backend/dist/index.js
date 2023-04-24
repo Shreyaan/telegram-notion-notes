@@ -35,15 +35,17 @@ const path = require("path");
 const ffmpeg_1 = require("@ffmpeg-installer/ffmpeg");
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
 fluent_ffmpeg_1.default.setFfmpegPath(ffmpeg_1.path);
-const processAudioFileToText_1 = require("./processAudioFileToText");
+const processAudioFileToText_1 = require("./lib/processAudioFileToText");
 const createTempDir_1 = require("./utils/createTempDir");
 const generateMessageidforFolderName_1 = require("./utils/generateMessageidforFolderName");
-const deleteTempFolder_1 = require("./utils/deleteTempFolder");
+const deleteTempFolder_1 = require("./lib/deleteTempFolder");
 const sendHelpCommands_1 = require("./utils/sendHelpCommands");
 const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("./models/User"));
-const downloadFile_1 = require("./utils/downloadFile");
+const downloadFile_1 = require("./lib/downloadFile");
 const client_1 = require("@notionhq/client");
+const generateOutputForMsg_1 = require("./utils/generateOutputForMsg");
+const saveToNotion_1 = require("./lib/saveToNotion");
 if (process.env.MONGODB_URI === undefined) {
     throw new Error("MONGODB_URI not defined");
 }
@@ -123,10 +125,7 @@ bot.on("audio", async (ctx) => {
                         const dir = (0, createTempDir_1.createTmepDir)((0, generateMessageidforFolderName_1.generateMessageidforFOlderName)(ctx));
                         await (0, downloadFile_1.downloadFile)(fileUrl, dir + "/audio" + fileExtension);
                         let textToSend = await (0, processAudioFileToText_1.generateText)(dir + "/audio" + fileExtension);
-                        ctx.telegram.sendMessage(ctx.message.chat.id, `${textToSend.summary}
-            
-              transcript:
-              ${textToSend.textToSummarize}`);
+                        ctx.telegram.sendMessage(ctx.message.chat.id, (0, generateOutputForMsg_1.generateOutputForMsg)(textToSend));
                         if (user.isPremium === false) {
                             user.numberOfUses += 1;
                             await user.save();
@@ -165,78 +164,16 @@ bot.on("voice", async (ctx) => {
                     user.isPremium === true) {
                     ctx.telegram.sendMessage(ctx.message.chat.id, "Processing voice message ...");
                     let textToSend = await (0, processAudioFileToText_1.processAudioFileToText)(ctx);
-                    ctx.telegram.sendMessage(ctx.message.chat.id, `${textToSend.summary}
-            
-transcript:
-${textToSend.textToSummarize}`);
+                    ctx.telegram.sendMessage(ctx.message.chat.id, (0, generateOutputForMsg_1.generateOutputForMsg)(textToSend));
                     //save to notion
                     if (user.pageId === undefined) {
                         return ctx.reply("Please set your db id first. Send /selectNotionDb to set your page id.");
                     }
                     else if (typeof user.pageId === "string") {
-                        const notion = new client_1.Client({ auth: user.token });
-                        try {
-                            (async () => {
-                                if (user.pageId === undefined) {
-                                    return;
-                                }
-                                const response = await notion.pages.create({
-                                    parent: {
-                                        type: "database_id",
-                                        database_id: user.pageId,
-                                    },
-                                    properties: {
-                                        Name: {
-                                            title: [
-                                                {
-                                                    text: {
-                                                        content: textToSend.summary.substring(0, 30),
-                                                    },
-                                                },
-                                            ],
-                                        },
-                                    },
-                                    children: [
-                                        {
-                                            object: "block",
-                                            heading_3: {
-                                                rich_text: [
-                                                    {
-                                                        text: {
-                                                            content: textToSend.summary,
-                                                        },
-                                                    },
-                                                ],
-                                                color: "default",
-                                            },
-                                        },
-                                        {
-                                            object: "block",
-                                            paragraph: {
-                                                rich_text: [
-                                                    {
-                                                        text: {
-                                                            content: textToSend.textToSummarize.substring(0, 1999),
-                                                        },
-                                                    },
-                                                ],
-                                                color: "default",
-                                            },
-                                        },
-                                    ],
-                                });
-                                console.log(121323, response);
-                                ctx.reply("added to notion");
-                            })();
-                        }
-                        catch (error) {
-                            ctx.reply("Something went wrong. Please check you have set your db id correctly. Send /selectNotionDb to set your db id");
-                        }
+                        (0, saveToNotion_1.saveToNotion)(user, textToSend, ctx);
                     }
-                    if (user.isPremium === false) {
-                        user.numberOfUses += 1;
-                        await user.save();
-                    }
+                    user.numberOfUses += 1;
+                    await user.save();
                 }
                 if (user.isPremium === false && user.numberOfUses > 5) {
                     ctx.reply("You have reached your limit of 5 free uses. Please upgrade to premium to use this bot.");

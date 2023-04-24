@@ -4,10 +4,10 @@ import axios from "axios";
 import fs from "fs";
 const path = require("path");
 import ffmpeg from "fluent-ffmpeg";
-import { isTempBeingUsed } from ".";
+import { isTempBeingUsed } from "..";
 import { Configuration, OpenAIApi } from "openai";
-import { createTmepDir } from "./utils/createTempDir";
-import { generateMessageidforFOlderName } from "./utils/generateMessageidforFolderName";
+import { createTmepDir } from "../utils/createTempDir";
+import { generateMessageidforFOlderName } from "../utils/generateMessageidforFolderName";
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -120,7 +120,7 @@ export async function processAudioFileToText(
     fs.rmdirSync(`./temp/${messageId}`, { recursive: true });
     isTempBeingUsed.inuse = false;
   } catch (error) {
-    textToSend = {summary: "error", textToSummarize: "error"}
+    textToSend = { summary: "error", textToSummarize: "error" };
     isTempBeingUsed.inuse = false;
   }
   return textToSend;

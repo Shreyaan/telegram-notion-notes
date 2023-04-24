@@ -8,15 +8,20 @@ const path = require("path");
 import { path as ffmpegPath } from "@ffmpeg-installer/ffmpeg";
 import ffmpeg from "fluent-ffmpeg";
 ffmpeg.setFfmpegPath(ffmpegPath);
-import { generateText, processAudioFileToText } from "./processAudioFileToText";
+import {
+  generateText,
+  processAudioFileToText,
+} from "./lib/processAudioFileToText";
 import { createTmepDir } from "./utils/createTempDir";
 import { generateMessageidforFOlderName } from "./utils/generateMessageidforFolderName";
-import { deleteTempFolder } from "./utils/deleteTempFolder";
+import { deleteTempFolder } from "./lib/deleteTempFolder";
 import { sendHelpCommands } from "./utils/sendHelpCommands";
 import mongoose from "mongoose";
 import User from "./models/User";
-import { downloadFile } from "./utils/downloadFile";
+import { downloadFile } from "./lib/downloadFile";
 import { Client } from "@notionhq/client";
+import { generateOutputForMsg } from "./utils/generateOutputForMsg";
+import { saveToNotion } from "./lib/saveToNotion";
 
 interface NotionDatabase {
   object: "database";
@@ -165,10 +170,10 @@ bot.on("audio", async (ctx) => {
               let textToSend = await generateText(
                 dir + "/audio" + fileExtension
               );
-              ctx.telegram.sendMessage(ctx.message.chat.id, `${textToSend.summary}
-            
-              transcript:
-              ${textToSend.textToSummarize}`);
+              ctx.telegram.sendMessage(
+                ctx.message.chat.id,
+                generateOutputForMsg(textToSend)
+              );
               if (user.isPremium === false) {
                 user.numberOfUses += 1;
                 await user.save();
@@ -215,10 +220,7 @@ bot.on("voice", async (ctx) => {
             let textToSend = await processAudioFileToText(ctx);
             ctx.telegram.sendMessage(
               ctx.message.chat.id,
-              `${textToSend.summary}
-            
-transcript:
-${textToSend.textToSummarize}`
+              generateOutputForMsg(textToSend)
             );
             //save to notion
             if (user.pageId === undefined) {
@@ -226,72 +228,11 @@ ${textToSend.textToSummarize}`
                 "Please set your db id first. Send /selectNotionDb to set your page id."
               );
             } else if (typeof user.pageId === "string") {
-              const notion = new Client({ auth: user.token });
-
-              try {
-                (async () => {
-                  if (user.pageId === undefined) {
-                    return;
-                  }
-                  const response = await notion.pages.create({
-                    parent: {
-                      type: "database_id",
-                      database_id: user.pageId,
-                    },
-                    properties: {
-                      Name: {
-                        title: [
-                          {
-                            text: {
-                              content: textToSend.summary.substring(0, 30),
-                            },
-                          },
-                        ],
-                      },
-                    },
-                    children: [
-                      {
-                        object: "block",
-                        heading_3: {
-                          rich_text: [
-                            {
-                              text: {
-                                content: textToSend.summary,
-                              },
-                            },
-                          ],
-                          color: "default",
-                        },
-                      },
-                      {
-                        object: "block",
-                        paragraph: {
-                          rich_text: [
-                            {
-                              text: {
-                                content: textToSend.textToSummarize.substring(0,1999),
-                              },
-                            },
-                          ],
-                          color: "default",
-                        },
-                      },
-                    ],
-                  });
-                  console.log(121323, response);
-
-                  ctx.reply("added to notion");
-                })();
-              } catch (error) {
-                ctx.reply(
-                  "Something went wrong. Please check you have set your db id correctly. Send /selectNotionDb to set your db id"
-                );
-              }
+              saveToNotion(user, textToSend, ctx);
             }
-            if (user.isPremium === false) {
-              user.numberOfUses += 1;
-              await user.save();
-            }
+
+            user.numberOfUses += 1;
+            await user.save();
           }
 
           if (user.isPremium === false && user.numberOfUses > 5) {
