@@ -24,7 +24,7 @@ const openai = new OpenAIApi(configuration);
 
 async function generateText(inputFileName: any) {
   console.log("generating text");
-  
+
   const resp = await openai.createTranscription(
     fs.createReadStream(inputFileName),
     "whisper-1"
@@ -40,16 +40,16 @@ async function generateText(inputFileName: any) {
       },
     ],
   });
-  const summary = completion.data.choices[0].message?.content
+  const summary = completion.data.choices[0].message?.content;
   console.log(textToSummarize);
-  
+
   return `${summary}
   
 transcript:
 ${textToSummarize}
 
 
-  `
+  `;
 }
 
 async function audioConversion(inputFileName: string, messageId: string) {
@@ -127,7 +127,10 @@ bot.on("voice", async (ctx) => {
     let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
     console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
 
-    const filePath = await saveStream(voiceMessageStream, messageId)  as string;
+    const filePath = (await saveStream(
+      voiceMessageStream,
+      messageId
+    )) as string;
 
     let text = await generateText(await audioConversion(filePath, messageId));
 
@@ -140,6 +143,29 @@ bot.on("voice", async (ctx) => {
     ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
     isTempBeingUsed = false;
   }
+});
+
+bot.command("cleartemp", (ctx) => {
+  try {
+    const tempDir = "./temp";
+    const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+    const subdirs = fs
+      .readdirSync(tempDir, { withFileTypes: true })
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => dirent.name);
+    subdirs.forEach((subdir) => {
+      const subdirPath = path.join(tempDir, subdir);
+      const stats = fs.statSync(subdirPath);
+      const lastModifiedTime = stats.mtime.getTime();
+      if (true) {
+        fs.rmdirSync(subdirPath, { recursive: true });
+        console.log(`Deleted directory: ${subdirPath}`);
+      }
+    });
+  } catch (err: any) {
+    console.error(`Error deleting temporary directory: ${err.message}`);
+  }
+  ctx.reply("Temp folder cleared");
 });
 
 function deleteTempFolder() {

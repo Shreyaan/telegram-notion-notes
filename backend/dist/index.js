@@ -126,7 +126,7 @@ bot.on("voice", async (ctx) => {
         });
         let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
         console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
-        const filePath = await saveStream(voiceMessageStream, messageId);
+        const filePath = (await saveStream(voiceMessageStream, messageId));
         let text = await generateText(await audioConversion(filePath, messageId));
         //delete folder
         fs_1.default.rmdirSync(`./temp/${messageId}`, { recursive: true });
@@ -138,6 +138,29 @@ bot.on("voice", async (ctx) => {
         ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
         isTempBeingUsed = false;
     }
+});
+bot.command("cleartemp", (ctx) => {
+    try {
+        const tempDir = "./temp";
+        const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+        const subdirs = fs_1.default
+            .readdirSync(tempDir, { withFileTypes: true })
+            .filter((dirent) => dirent.isDirectory())
+            .map((dirent) => dirent.name);
+        subdirs.forEach((subdir) => {
+            const subdirPath = path.join(tempDir, subdir);
+            const stats = fs_1.default.statSync(subdirPath);
+            const lastModifiedTime = stats.mtime.getTime();
+            if (true) {
+                fs_1.default.rmdirSync(subdirPath, { recursive: true });
+                console.log(`Deleted directory: ${subdirPath}`);
+            }
+        });
+    }
+    catch (err) {
+        console.error(`Error deleting temporary directory: ${err.message}`);
+    }
+    ctx.reply("Temp folder cleared");
 });
 function deleteTempFolder() {
     try {
