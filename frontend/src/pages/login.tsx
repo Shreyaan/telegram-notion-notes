@@ -9,19 +9,17 @@ export default function LoginPage() {
   const [message, setMessage] = useState('Loading...');
 
   useEffect(() => {
-    if (router.query.tgId && typeof router.query.tgId === 'string') {
-      setTgId(router.query.tgId);
-      void router.push('./api/notion/login');
+    if (router.isReady) {
+      const queryTgId = router.query.tgId;
+  
+      if (typeof queryTgId === 'string') {
+        setTgId(queryTgId);
+        void router.push('./api/notion/login');
+      } else {
+        setMessage('Error: Something went wrong. Please try again.');
+      }
     }
-    else {
-        //wait 50ms to set message
-       if(router.query.tgId === undefined) {
-           setTimeout(() => {
-               setMessage('Error: Something went wrong. Please try again.');
-           }, 2000);
-       }
-    }
-  }, [router, setTgId]);
+  }, [router, router.isReady, router.query, setTgId]);
 
   return <h1>{message}</h1>;
 }
