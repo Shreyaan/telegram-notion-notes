@@ -1,13 +1,9 @@
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
-import { Context, Markup, Telegraf } from "telegraf";
+import { Context, Telegraf } from "telegraf";
 import { Update } from "typegram";
-import { message } from "telegraf/filters";
 import fs from "fs";
 const path = require("path");
-import { path as ffmpegPath } from "@ffmpeg-installer/ffmpeg";
-import ffmpeg from "fluent-ffmpeg";
-ffmpeg.setFfmpegPath(ffmpegPath);
 import {
   generateText,
   processAudioFileToText,
@@ -22,52 +18,8 @@ import { downloadFile } from "./lib/downloadFile";
 import { Client } from "@notionhq/client";
 import { generateOutputForMsg } from "./utils/generateOutputForMsg";
 import { saveToNotion } from "./lib/saveToNotion";
-
-interface NotionDatabase {
-  object: "database";
-  id: string;
-  cover: null;
-  icon: null;
-  created_time: string;
-  created_by: {
-    object: "user";
-    id: string;
-  };
-  last_edited_by: {
-    object: "user";
-    id: string;
-  };
-  last_edited_time: string;
-  title: [
-    {
-      type: "text";
-      text: {
-        content: string;
-      };
-      annotations: {
-        [key: string]: boolean;
-      };
-      plain_text: string;
-      href: null;
-    }
-  ];
-  description: [];
-  is_inline: false;
-  properties: {
-    [key: string]: {
-      id: string;
-      name: string;
-      type: string;
-      [key: string]: any;
-    };
-  };
-  parent: {
-    type: "workspace";
-    workspace: true;
-  };
-  url: string;
-  archived: boolean;
-}
+import { NotionDatabase } from "./index.d";
+import { loginController } from "./lib/loginController";
 
 if (process.env.MONGODB_URI === undefined) {
   throw new Error("MONGODB_URI not defined");
@@ -106,37 +58,7 @@ bot.command("login", async (ctx) => {
     ctx.reply("Something went wrong");
     return;
   }
-  //check if user exists
-  // Find a user by their email
-  User.findOne({ telegramId: userid })
-    .then(async (user) => {
-      if (user) {
-      } else {
-        const user = new User({
-          telegramId: userid,
-        });
-        await user.save();
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-
-  ctx.replyWithHTML(
-    `Please login with Notion using this button to use this bot.`,
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "Login to Notion",
-              url: `https://telegram-notes.vercel.app/login?tgId=${userid}`,
-            },
-          ],
-        ],
-      },
-    }
-  );
+  loginController(userid, ctx);
 });
 
 bot.on("audio", async (ctx) => {

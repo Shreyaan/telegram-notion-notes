@@ -32,9 +32,6 @@ dotenv.config();
 const telegraf_1 = require("telegraf");
 const fs_1 = __importDefault(require("fs"));
 const path = require("path");
-const ffmpeg_1 = require("@ffmpeg-installer/ffmpeg");
-const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
-fluent_ffmpeg_1.default.setFfmpegPath(ffmpeg_1.path);
 const processAudioFileToText_1 = require("./lib/processAudioFileToText");
 const createTempDir_1 = require("./utils/createTempDir");
 const generateMessageidforFolderName_1 = require("./utils/generateMessageidforFolderName");
@@ -46,6 +43,7 @@ const downloadFile_1 = require("./lib/downloadFile");
 const client_1 = require("@notionhq/client");
 const generateOutputForMsg_1 = require("./utils/generateOutputForMsg");
 const saveToNotion_1 = require("./lib/saveToNotion");
+const loginController_1 = require("./lib/loginController");
 if (process.env.MONGODB_URI === undefined) {
     throw new Error("MONGODB_URI not defined");
 }
@@ -76,34 +74,7 @@ bot.command("login", async (ctx) => {
         ctx.reply("Something went wrong");
         return;
     }
-    //check if user exists
-    // Find a user by their email
-    User_1.default.findOne({ telegramId: userid })
-        .then(async (user) => {
-        if (user) {
-        }
-        else {
-            const user = new User_1.default({
-                telegramId: userid,
-            });
-            await user.save();
-        }
-    })
-        .catch((error) => {
-        console.error(error);
-    });
-    ctx.replyWithHTML(`Please login with Notion using this button to use this bot.`, {
-        reply_markup: {
-            inline_keyboard: [
-                [
-                    {
-                        text: "Login to Notion",
-                        url: `https://telegram-notes.vercel.app/login?tgId=${userid}`,
-                    },
-                ],
-            ],
-        },
-    });
+    (0, loginController_1.loginController)(userid, ctx);
 });
 bot.on("audio", async (ctx) => {
     try {
