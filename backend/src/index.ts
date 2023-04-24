@@ -71,7 +71,7 @@ bot.command("login", async (ctx) => {
   //   `Please <a href="https://anosher.com/${userid}">login with Notion</a> to use this bot.`
   // );
   ctx.replyWithHTML(
-    `looged in as ${username}.`)
+    `looged in as ${username}. Send /help to get started`)
 });
 
 bot.on("voice", async (ctx) => {
