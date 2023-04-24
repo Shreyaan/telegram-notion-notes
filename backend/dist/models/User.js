@@ -30,7 +30,7 @@ const UserSchema = new mongoose_1.default.Schema({
         required: false,
         unique: false,
     },
-    pageName: {
+    pageId: {
         type: String,
         required: false,
         unique: false,

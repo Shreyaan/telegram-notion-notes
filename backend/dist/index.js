@@ -239,7 +239,20 @@ bot.action(/^selectDb:(.+)$/, async (ctx) => {
     const databaseId = ctx.match[1];
     const userId = ctx.from?.id;
     // TODO: Save the selected database ID for the user
-    await ctx.reply(`You selected database ${databaseId}`);
+    try {
+        User_1.default.findOne({ telegramId: userId })
+            .then(async (user) => {
+            if (user?.token) {
+                user.pageId = databaseId;
+                await user.save();
+            }
+        });
+        await ctx.reply(`You selected database ${databaseId}`);
+    }
+    catch (error) {
+        console.log(error);
+        ctx.reply("Something went wrong");
+    }
 });
 bot.command("cleartemp", (ctx) => {
     if (!exports.isTempBeingUsed.inuse) {

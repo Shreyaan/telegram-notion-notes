@@ -211,6 +211,7 @@ bot.on("voice", async (ctx) => {
             );
             let textToSend = await processAudioFileToText(ctx);
             ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+            
             if (user.isPremium === false) {
               user.numberOfUses += 1;
               await user.save();
@@ -292,7 +293,20 @@ bot.action(/^selectDb:(.+)$/, async (ctx) => {
 
   // TODO: Save the selected database ID for the user
 
-  await ctx.reply(`You selected database ${databaseId}`);
+try {
+    User.findOne({ telegramId: userId })
+      .then(async (user) => {
+        if (user?.token) {
+          user.pageId = databaseId
+          await user.save()
+        }
+      })
+  
+    await ctx.reply(`You selected database ${databaseId}`);
+} catch (error) {
+    console.log(error);
+    ctx.reply("Something went wrong")
+}
 });
 
 bot.command("cleartemp", (ctx) => {
@@ -329,5 +343,4 @@ if (process.env.NODE_ENV === "production") {
 } else {
   bot.launch();
 }
-
 
