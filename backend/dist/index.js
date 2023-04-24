@@ -43,6 +43,7 @@ const sendHelpCommands_1 = require("./utils/sendHelpCommands");
 const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("./models/User"));
 const downloadFile_1 = require("./utils/downloadFile");
+const client_1 = require("@notionhq/client");
 if (process.env.MONGODB_URI === undefined) {
     throw new Error("MONGODB_URI not defined");
 }
@@ -89,7 +90,15 @@ bot.command("login", async (ctx) => {
         .catch((error) => {
         console.error(error);
     });
-    ctx.replyWithHTML(`Please login with Notion using <a href="http://localhost:3000/login?tgId=${userid}">this link</a> to use this bot.`);
+    ctx.replyWithHTML(`Please login with Notion using this button to use this bot.`, {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: 'Login to Notion', url: `https://telegram-notes.vercel.app/login?tgId=${userid}` }
+                ]
+            ]
+        }
+    });
 });
 bot.on("audio", async (ctx) => {
     try {
@@ -104,7 +113,7 @@ bot.on("audio", async (ctx) => {
             fileExtension === ".m4a") {
             User_1.default.findOne({ telegramId: userid })
                 .then(async (user) => {
-                if (user) {
+                if (user?.token) {
                     if ((user.isPremium === false && user.numberOfUses <= 5) ||
                         user.isPremium === true) {
                         ctx.telegram.sendMessage(ctx.message.chat.id, "Processing audio file ...");
@@ -172,6 +181,38 @@ bot.on("voice", async (ctx) => {
         console.log(error);
         ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
     }
+});
+bot.command("selectNotionDb", async (ctx) => {
+    let userid = ctx.from.id;
+    User_1.default.findOne({ telegramId: userid })
+        .then(async (user) => {
+        if (user?.token) {
+            const notion = new client_1.Client({ auth: user.token });
+            (async () => {
+                const response = await notion.search({
+                    query: 'External tasks',
+                    filter: {
+                        value: 'database',
+                        property: 'object'
+                    },
+                    sort: {
+                        direction: 'ascending',
+                        timestamp: 'last_edited_time'
+                    },
+                });
+                ctx.reply("Select a database to use");
+                response.results.forEach((page) => {
+                    ctx.reply(page.id + " " + page.object);
+                });
+            })();
+        }
+        else {
+            ctx.reply("Please login first using /login command");
+        }
+    })
+        .catch((error) => {
+        console.error(error);
+    });
 });
 bot.command("cleartemp", (ctx) => {
     if (!exports.isTempBeingUsed.inuse) {

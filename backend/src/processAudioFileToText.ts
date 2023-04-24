@@ -16,9 +16,8 @@ export const openai = new OpenAIApi(configuration);
 
 export async function generateText(inputFileName: any) {
   console.log("generating text");
-
   const resp = await openai.createTranscription(
-    fs.createReadStream(inputFileName),
+    fs.createReadStream(inputFileName) as unknown as File,
     "whisper-1"
   );
   let textToSummarize = resp.data.text;
