@@ -20,6 +20,8 @@ const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+let isTempBeingUsed = false;
+
 const openai = new OpenAIApi(configuration);
 
 async function generateText(inputFileName: any) {
@@ -99,7 +101,7 @@ async function saveStream(
   });
 }
 
-let isTempBeingUsed = false;
+
 
 bot.start((ctx) => {
   ctx.reply("Hello " + ctx.from.first_name + "!");
@@ -132,11 +134,11 @@ bot.on("voice", async (ctx) => {
       messageId
     )) as string;
 
-    let text = await generateText(await audioConversion(filePath, messageId));
+    let textToSend = await generateText(await audioConversion(filePath, messageId));
 
     //delete folder
     fs.rmdirSync(`./temp/${messageId}`, { recursive: true });
-    ctx.telegram.sendMessage(ctx.message.chat.id, text);
+    ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
     isTempBeingUsed = false;
   } catch (error) {
     console.log(error);

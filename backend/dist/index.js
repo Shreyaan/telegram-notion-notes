@@ -40,6 +40,7 @@ const bot = new telegraf_1.Telegraf(process.env.BOT_TOKEN);
 const configuration = new openai_1.Configuration({
     apiKey: process.env.OPENAI_API_KEY,
 });
+let isTempBeingUsed = false;
 const openai = new openai_1.OpenAIApi(configuration);
 async function generateText(inputFileName) {
     console.log("generating text");
@@ -107,7 +108,6 @@ async function saveStream(voiceMessageStream, messageId) {
         });
     });
 }
-let isTempBeingUsed = false;
 bot.start((ctx) => {
     ctx.reply("Hello " + ctx.from.first_name + "!");
 });
@@ -127,10 +127,10 @@ bot.on("voice", async (ctx) => {
         let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
         console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
         const filePath = (await saveStream(voiceMessageStream, messageId));
-        let text = await generateText(await audioConversion(filePath, messageId));
+        let textToSend = await generateText(await audioConversion(filePath, messageId));
         //delete folder
         fs_1.default.rmdirSync(`./temp/${messageId}`, { recursive: true });
-        ctx.telegram.sendMessage(ctx.message.chat.id, text);
+        ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
         isTempBeingUsed = false;
     }
     catch (error) {
