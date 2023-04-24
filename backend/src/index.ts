@@ -45,6 +45,7 @@ bot.help((ctx) => {
 bot.command("login", async (ctx) => {
   let userid = ctx.from.id;
   let username = ctx.from.username;
+  console.log(userid, username);
 
   if (userid === undefined || username === undefined) {
     ctx.reply("Something went wrong");
@@ -55,7 +56,6 @@ bot.command("login", async (ctx) => {
   User.findOne({ telegramId: userid })
     .then(async (user) => {
       if (user) {
-        
       } else {
         const user = new User({
           telegramId: userid,
@@ -67,19 +67,47 @@ bot.command("login", async (ctx) => {
       console.error(error);
     });
 
+  // ctx.replyWithHTML(
+  //   `Please <a href="https://anosher.com/${userid}">login with Notion</a> to use this bot.`
+  // );
   ctx.replyWithHTML(
-    `Please <a href="https://anosher.com/${userid}">login with Notion</a> to use this bot.`
-  );
+    `looged in as ${username}.`)
 });
 
 bot.on("voice", async (ctx) => {
   try {
-    ctx.telegram.sendMessage(
-      ctx.message.chat.id,
-      "Processing voice message ..."
-    );
-    let textToSend = await processAudioFileToText(ctx);
-    ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+    let userid = ctx.from.id;
+    User.findOne({ telegramId: userid })
+      .then(async (user) => {
+        if (user) {
+          if (
+            (user.isPremium === false && user.numberOfUses <= 5) ||
+            user.isPremium === true
+          ) {
+            ctx.telegram.sendMessage(
+              ctx.message.chat.id,
+              "Processing voice message ..."
+            );
+            let textToSend = await processAudioFileToText(ctx);
+            ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+            if (user.isPremium === false) {
+              user.numberOfUses += 1;
+              await user.save();
+            }
+          }
+
+          if (user.isPremium === false && user.numberOfUses > 5) {
+            ctx.reply(
+              "You have reached your limit of 5 free uses. Please upgrade to premium to use this bot."
+            );
+          }
+        } else {
+          ctx.reply("Please login first using /login command");
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   } catch (error) {
     console.log(error);
     ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");

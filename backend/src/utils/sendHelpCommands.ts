@@ -10,7 +10,10 @@ export function sendHelpCommands(
     }
   >
 ) {
-  ctx.reply("Send /start to receive a greeting");
-  ctx.reply("Send /keyboard to receive a message with a keyboard");
-  ctx.reply("Send /quit to stop the bot");
+  // you can send voice note to get it transcribed and summarized
+  ctx.reply(
+    `You can send a voice note to get it transcribed and summarized.
+    \n
+to use this bot you need to login using /login command.`
+  );
 }

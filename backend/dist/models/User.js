@@ -15,6 +15,16 @@ const UserSchema = new mongoose_1.default.Schema({
         required: false,
         unique: true,
     },
+    isPremium: {
+        type: Boolean,
+        required: true,
+        default: false,
+    },
+    numberOfUses: {
+        type: Number,
+        required: true,
+        default: 0,
+    },
     created_at: {
         type: Date,
         default: Date.now,
