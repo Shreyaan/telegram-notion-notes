@@ -32,13 +32,11 @@ async function generateText(inputFileName) {
     });
     const summary = completion.data.choices[0].message?.content;
     console.log(textToSummarize);
-    return `${summary}
-  
-transcript:
-${textToSummarize}
-
-
-  `;
+    let output = {
+        summary: summary,
+        textToSummarize: textToSummarize,
+    };
+    return output;
 }
 exports.generateText = generateText;
 async function audioConversion(inputFileName, messageId) {
@@ -78,7 +76,10 @@ async function saveStream(voiceMessageStream, messageId) {
 }
 async function processAudioFileToText(ctx) {
     _1.isTempBeingUsed.inuse = true;
-    let textToSend = "";
+    let textToSend = {
+        summary: "",
+        textToSummarize: "",
+    };
     try {
         const { href: fileUrl } = await ctx.telegram.getFileLink(ctx.message.voice.file_id);
         const { data: voiceMessageStream } = await (0, axios_1.default)(fileUrl, {
@@ -94,7 +95,7 @@ async function processAudioFileToText(ctx) {
         _1.isTempBeingUsed.inuse = false;
     }
     catch (error) {
-        textToSend = "Something went wrong";
+        textToSend = { summary: "error", textToSummarize: "error" };
         _1.isTempBeingUsed.inuse = false;
     }
     return textToSend;

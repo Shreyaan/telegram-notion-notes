@@ -165,7 +165,10 @@ bot.on("audio", async (ctx) => {
               let textToSend = await generateText(
                 dir + "/audio" + fileExtension
               );
-              ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+              ctx.telegram.sendMessage(ctx.message.chat.id, `${textToSend.summary}
+            
+              transcript:
+              ${textToSend.textToSummarize}`);
               if (user.isPremium === false) {
                 user.numberOfUses += 1;
                 await user.save();
@@ -210,7 +213,13 @@ bot.on("voice", async (ctx) => {
               "Processing voice message ..."
             );
             let textToSend = await processAudioFileToText(ctx);
-            ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+            ctx.telegram.sendMessage(
+              ctx.message.chat.id,
+              `${textToSend.summary}
+            
+transcript:
+${textToSend.textToSummarize}`
+            );
             //save to notion
             if (user.pageId === undefined) {
               return ctx.reply(
@@ -234,7 +243,7 @@ bot.on("voice", async (ctx) => {
                         title: [
                           {
                             text: {
-                              content: textToSend.substring(0, 30),
+                              content: textToSend.summary.substring(0, 30),
                             },
                           },
                         ],
@@ -243,12 +252,24 @@ bot.on("voice", async (ctx) => {
                     children: [
                       {
                         object: "block",
+                        heading_3: {
+                          rich_text: [
+                            {
+                              text: {
+                                content: textToSend.summary,
+                              },
+                            },
+                          ],
+                          color: "default",
+                        },
+                      },
+                      {
+                        object: "block",
                         paragraph: {
                           rich_text: [
                             {
                               text: {
-                                content:
-                                 textToSend
+                                content: textToSend.textToSummarize.substring(0,1999),
                               },
                             },
                           ],

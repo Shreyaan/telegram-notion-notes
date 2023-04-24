@@ -123,7 +123,10 @@ bot.on("audio", async (ctx) => {
                         const dir = (0, createTempDir_1.createTmepDir)((0, generateMessageidforFolderName_1.generateMessageidforFOlderName)(ctx));
                         await (0, downloadFile_1.downloadFile)(fileUrl, dir + "/audio" + fileExtension);
                         let textToSend = await (0, processAudioFileToText_1.generateText)(dir + "/audio" + fileExtension);
-                        ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+                        ctx.telegram.sendMessage(ctx.message.chat.id, `${textToSend.summary}
+            
+              transcript:
+              ${textToSend.textToSummarize}`);
                         if (user.isPremium === false) {
                             user.numberOfUses += 1;
                             await user.save();
@@ -162,7 +165,10 @@ bot.on("voice", async (ctx) => {
                     user.isPremium === true) {
                     ctx.telegram.sendMessage(ctx.message.chat.id, "Processing voice message ...");
                     let textToSend = await (0, processAudioFileToText_1.processAudioFileToText)(ctx);
-                    ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+                    ctx.telegram.sendMessage(ctx.message.chat.id, `${textToSend.summary}
+            
+transcript:
+${textToSend.textToSummarize}`);
                     //save to notion
                     if (user.pageId === undefined) {
                         return ctx.reply("Please set your db id first. Send /selectNotionDb to set your page id.");
@@ -184,7 +190,7 @@ bot.on("voice", async (ctx) => {
                                             title: [
                                                 {
                                                     text: {
-                                                        content: textToSend.substring(0, 30),
+                                                        content: textToSend.summary.substring(0, 30),
                                                     },
                                                 },
                                             ],
@@ -193,11 +199,24 @@ bot.on("voice", async (ctx) => {
                                     children: [
                                         {
                                             object: "block",
+                                            heading_3: {
+                                                rich_text: [
+                                                    {
+                                                        text: {
+                                                            content: textToSend.summary,
+                                                        },
+                                                    },
+                                                ],
+                                                color: "default",
+                                            },
+                                        },
+                                        {
+                                            object: "block",
                                             paragraph: {
                                                 rich_text: [
                                                     {
                                                         text: {
-                                                            content: textToSend
+                                                            content: textToSend.textToSummarize.substring(0, 1999),
                                                         },
                                                     },
                                                 ],
