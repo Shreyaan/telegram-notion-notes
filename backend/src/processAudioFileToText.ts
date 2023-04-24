@@ -6,14 +6,15 @@ const path = require("path");
 import ffmpeg from "fluent-ffmpeg";
 import { isTempBeingUsed } from ".";
 import { Configuration, OpenAIApi } from "openai";
-
+import { createTmepDir } from "./utils/createTempDir";
+import { generateMessageidforFOlderName } from "./utils/generateMessageidforFolderName";
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 export const openai = new OpenAIApi(configuration);
 
-async function generateText(inputFileName: any) {
+export async function generateText(inputFileName: any) {
   console.log("generating text");
 
   const resp = await openai.createTranscription(
@@ -67,14 +68,7 @@ async function saveStream(
   messageId: string
 ) {
   // create temporary directory
-  const tempDir = "./temp";
-  const dir = path.join(tempDir, messageId);
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir);
-  }
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
-  }
+  const dir = createTmepDir(messageId);
   const filePath: string = path.join(dir, "audio.ogg");
   const fileStream = fs.createWriteStream(filePath);
   voiceMessageStream.pipe(fileStream);
@@ -110,8 +104,7 @@ export async function processAudioFileToText(
       responseType: "stream",
     });
 
-    let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
-    console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
+    let messageId = generateMessageidforFOlderName(ctx);
 
     const filePath = (await saveStream(
       voiceMessageStream,

@@ -8,11 +8,14 @@ const path = require("path");
 import { path as ffmpegPath } from "@ffmpeg-installer/ffmpeg";
 import ffmpeg from "fluent-ffmpeg";
 ffmpeg.setFfmpegPath(ffmpegPath);
-import { processAudioFileToText } from "./processAudioFileToText";
+import { generateText, processAudioFileToText } from "./processAudioFileToText";
+import { createTmepDir } from "./utils/createTempDir";
+import { generateMessageidforFOlderName } from "./utils/generateMessageidforFolderName";
 import { deleteTempFolder } from "./utils/deleteTempFolder";
 import { sendHelpCommands } from "./utils/sendHelpCommands";
 import mongoose from "mongoose";
 import User from "./models/User";
+import { downloadFile } from "./utils/downloadFile";
 
 if (process.env.MONGODB_URI === undefined) {
   throw new Error("MONGODB_URI not defined");
@@ -70,8 +73,68 @@ bot.command("login", async (ctx) => {
   // ctx.replyWithHTML(
   //   `Please <a href="https://anosher.com/${userid}">login with Notion</a> to use this bot.`
   // );
-  ctx.replyWithHTML(
-    `looged in as ${username}. Send /help to get started`)
+  ctx.replyWithHTML(`looged in as ${username}. Send /help to get started`);
+});
+
+bot.on("audio", async (ctx) => {
+  try {
+    let userid = ctx.from.id;
+    let messageid = ctx.message.message_id;
+    const file = await ctx.telegram.getFile(ctx.message.audio.file_id);
+    const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+    const fileExtension = path.extname(file.file_path);
+    //if mp3/wav/m4a then process
+    if (
+      fileExtension === ".mp3" ||
+      fileExtension === ".wav" ||
+      fileExtension === ".m4a"
+    ) {
+      User.findOne({ telegramId: userid })
+        .then(async (user) => {
+          if (user) {
+            if (
+              (user.isPremium === false && user.numberOfUses <= 5) ||
+              user.isPremium === true
+            ) {
+              ctx.telegram.sendMessage(
+                ctx.message.chat.id,
+                "Processing audio file ..."
+              );
+
+              const dir = createTmepDir(generateMessageidforFOlderName(ctx));
+              await downloadFile(fileUrl, dir + "/audio" + fileExtension);
+
+              let textToSend = await generateText(
+                dir + "/audio" + fileExtension
+              );
+              ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+              if (user.isPremium === false) {
+                user.numberOfUses += 1;
+                await user.save();
+              }
+              fs.rmdirSync(dir, { recursive: true });
+            }
+
+            if (user.isPremium === false && user.numberOfUses > 5) {
+              ctx.reply(
+                "You have reached your limit of 5 free uses. Please upgrade to premium to use this bot."
+              );
+            }
+          } else {
+            ctx.reply("Please login to use this bot. Send /login to login.");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else {
+      ctx.reply("Please send an audio file in mp3, wav or m4a format");
+      return;
+    }
+  } catch (error) {
+    console.log(error);
+    ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
+  }
 });
 
 bot.on("voice", async (ctx) => {

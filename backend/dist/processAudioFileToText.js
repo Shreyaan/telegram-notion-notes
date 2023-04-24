@@ -3,13 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.processAudioFileToText = exports.openai = void 0;
+exports.processAudioFileToText = exports.generateText = exports.openai = void 0;
 const axios_1 = __importDefault(require("axios"));
 const fs_1 = __importDefault(require("fs"));
 const path = require("path");
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
 const _1 = require(".");
 const openai_1 = require("openai");
+const createTempDir_1 = require("./utils/createTempDir");
+const generateMessageidforFolderName_1 = require("./utils/generateMessageidforFolderName");
 const configuration = new openai_1.Configuration({
     apiKey: process.env.OPENAI_API_KEY,
 });
@@ -38,6 +40,7 @@ ${textToSummarize}
 
   `;
 }
+exports.generateText = generateText;
 async function audioConversion(inputFileName, messageId) {
     const outputFileName = `./temp/${messageId}/audio.mp3`;
     return new Promise((resolve, reject) => {
@@ -58,14 +61,7 @@ async function audioConversion(inputFileName, messageId) {
 }
 async function saveStream(voiceMessageStream, messageId) {
     // create temporary directory
-    const tempDir = "./temp";
-    const dir = path.join(tempDir, messageId);
-    if (!fs_1.default.existsSync(tempDir)) {
-        fs_1.default.mkdirSync(tempDir);
-    }
-    if (!fs_1.default.existsSync(dir)) {
-        fs_1.default.mkdirSync(dir);
-    }
+    const dir = (0, createTempDir_1.createTmepDir)(messageId);
     const filePath = path.join(dir, "audio.ogg");
     const fileStream = fs_1.default.createWriteStream(filePath);
     voiceMessageStream.pipe(fileStream);
@@ -88,8 +84,7 @@ async function processAudioFileToText(ctx) {
         const { data: voiceMessageStream } = await (0, axios_1.default)(fileUrl, {
             responseType: "stream",
         });
-        let messageId = `${ctx.message.message_id}${ctx.message.chat.id}${ctx.message.date}`;
-        console.log(ctx.message.message_id, ctx.message.chat.id, ctx.message.date);
+        let messageId = (0, generateMessageidforFolderName_1.generateMessageidforFOlderName)(ctx);
         const filePath = (await saveStream(voiceMessageStream, messageId));
         textToSend = await generateText(await audioConversion(filePath, messageId));
         //delete folder

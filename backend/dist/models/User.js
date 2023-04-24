@@ -13,7 +13,7 @@ const UserSchema = new mongoose_1.default.Schema({
     token: {
         type: String,
         required: false,
-        unique: true,
+        unique: false,
     },
     isPremium: {
         type: Boolean,
