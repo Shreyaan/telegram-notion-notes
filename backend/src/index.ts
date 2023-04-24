@@ -51,10 +51,10 @@ bot.help((ctx) => {
 //login
 bot.command("login", async (ctx) => {
   let userid = ctx.from.id;
-  let username = ctx.from.username;
+  let username = ctx.from.username || ctx.from.first_name;
   console.log(userid, username);
 
-  if (userid === undefined || username === undefined) {
+  if (userid === undefined ) {
     ctx.reply("Something went wrong");
     return;
   }
