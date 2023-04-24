@@ -16,6 +16,7 @@ interface User extends Document {
   name?: string;
   created_at: Date;
   updated_at?: Date;
+  pageName?: string;
 }
 
 const UserSchema: Schema = new mongoose.Schema({
@@ -40,6 +41,11 @@ const UserSchema: Schema = new mongoose.Schema({
     default: 0,
   },
   name: {
+    type: String,
+    required: false,
+    unique: false,
+  },
+  pageName: {
     type: String,
     required: false,
     unique: false,

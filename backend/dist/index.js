@@ -89,10 +89,7 @@ bot.command("login", async (ctx) => {
         .catch((error) => {
         console.error(error);
     });
-    // ctx.replyWithHTML(
-    //   `Please <a href="https://anosher.com/${userid}">login with Notion</a> to use this bot.`
-    // );
-    ctx.replyWithHTML(`looged in as ${username}. Send /help to get started`);
+    ctx.replyWithHTML(`Please login with Notion using <a href="http://localhost:3000/login?tgId=${userid}">this link</a> to use this bot.`);
 });
 bot.on("audio", async (ctx) => {
     try {
@@ -148,7 +145,7 @@ bot.on("voice", async (ctx) => {
         let userid = ctx.from.id;
         User_1.default.findOne({ telegramId: userid })
             .then(async (user) => {
-            if (user) {
+            if (user?.token) {
                 if ((user.isPremium === false && user.numberOfUses <= 5) ||
                     user.isPremium === true) {
                     ctx.telegram.sendMessage(ctx.message.chat.id, "Processing voice message ...");

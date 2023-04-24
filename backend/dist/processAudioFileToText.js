@@ -83,6 +83,8 @@ async function processAudioFileToText(ctx) {
         const { href: fileUrl } = await ctx.telegram.getFileLink(ctx.message.voice.file_id);
         const { data: voiceMessageStream } = await (0, axios_1.default)(fileUrl, {
             responseType: "stream",
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
         });
         let messageId = (0, generateMessageidforFolderName_1.generateMessageidforFOlderName)(ctx);
         const filePath = (await saveStream(voiceMessageStream, messageId));

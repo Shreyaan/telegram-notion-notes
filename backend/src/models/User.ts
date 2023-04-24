@@ -26,6 +26,11 @@ const UserSchema = new mongoose.Schema({
     required: false,
     unique: false,
   },
+  pageName: {
+    type: String,
+    required: false,
+    unique: false,
+  },
   created_at: {
     type: Date,
     default: Date.now,

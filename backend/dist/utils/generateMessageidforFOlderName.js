@@ -7,4 +7,4 @@ function generateMessageidforFOlderName(ctx) {
     return messageId;
 }
 exports.generateMessageidforFOlderName = generateMessageidforFOlderName;
-//# sourceMappingURL=generateMessageidforFOlderName.js.map
+//# sourceMappingURL=generateMessageidforFolderName.js.map

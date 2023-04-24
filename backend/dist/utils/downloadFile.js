@@ -11,6 +11,8 @@ async function downloadFile(fileUrl, outputLocationPath) {
     return (0, axios_1.default)({
         method: "get",
         url: fileUrl,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
         responseType: "stream",
     }).then((response) => {
         //ensure that the user can call `then()` only when the file has
