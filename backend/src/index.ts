@@ -18,6 +18,51 @@ import User from "./models/User";
 import { downloadFile } from "./utils/downloadFile";
 import { Client } from "@notionhq/client";
 
+interface NotionDatabase {
+  object: 'database';
+  id: string;
+  cover: null;
+  icon: null;
+  created_time: string;
+  created_by: {
+    object: 'user';
+    id: string;
+  };
+  last_edited_by: {
+    object: 'user';
+    id: string;
+  };
+  last_edited_time: string;
+  title: [
+    {
+      type: 'text';
+      text: {
+        content: string;
+      };
+      annotations: {
+        [key: string]: boolean;
+      };
+      plain_text: string;
+      href: null;
+    }
+  ];
+  description: [];
+  is_inline: false;
+  properties: {
+    [key: string]: {
+      id: string;
+      name: string;
+      type: string;
+      [key: string]: any;
+    };
+  };
+  parent: {
+    type: 'workspace';
+    workspace: true;
+  };
+  url: string;
+  archived: boolean;
+}
 
 if (process.env.MONGODB_URI === undefined) {
   throw new Error("MONGODB_URI not defined");
@@ -72,20 +117,21 @@ bot.command("login", async (ctx) => {
       console.error(error);
     });
 
-  
-    ctx.replyWithHTML(
-      `Please login with Notion using this button to use this bot.`,
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: 'Login to Notion', url: `https://telegram-notes.vercel.app/login?tgId=${userid}` }
-            ]
-          ]
-        }
-      }
-    );
- 
+  ctx.replyWithHTML(
+    `Please login with Notion using this button to use this bot.`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Login to Notion",
+              url: `https://telegram-notes.vercel.app/login?tgId=${userid}`,
+            },
+          ],
+        ],
+      },
+    }
+  );
 });
 
 bot.on("audio", async (ctx) => {
@@ -198,21 +244,38 @@ bot.command("selectNotionDb", async (ctx) => {
 
         (async () => {
           const response = await notion.search({
-            query: 'External tasks',
             filter: {
-              value: 'database',
-              property: 'object'
+              value: "database",
+              property: "object",
             },
             sort: {
-              direction: 'ascending',
-              timestamp: 'last_edited_time'
+              direction: "ascending",
+              timestamp: "last_edited_time",
             },
           });
           ctx.reply("Select a database to use");
+          console.log(response);
           response.results.forEach((page) => {
-            ctx.reply(page.id + " " + page.object);
-          }
-          );
+            (async () => {
+              const databaseId = page.id;
+              const response  = await notion.databases.retrieve({
+                database_id: databaseId,
+              }) as unknown as NotionDatabase
+              console.log(response);
+              ctx.replyWithHTML(`<b>${response.title[0].plain_text}</b>`, {
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      {
+                        text: "Select",
+                        callback_data: `selectDb:${databaseId}`,
+                      },
+                    ],
+                  ],
+                },
+              });
+            })();
+          });
         })();
       } else {
         ctx.reply("Please login first using /login command");
@@ -221,6 +284,15 @@ bot.command("selectNotionDb", async (ctx) => {
     .catch((error) => {
       console.error(error);
     });
+});
+
+bot.action(/^selectDb:(.+)$/, async (ctx) => {
+  const databaseId = ctx.match[1];
+  const userId = ctx.from?.id
+
+  // TODO: Save the selected database ID for the user
+
+  await ctx.reply(`You selected database ${databaseId}`);
 });
 
 bot.command("cleartemp", (ctx) => {
@@ -257,3 +329,5 @@ if (process.env.NODE_ENV === "production") {
 } else {
   bot.launch();
 }
+
+

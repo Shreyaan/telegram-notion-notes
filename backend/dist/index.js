@@ -94,10 +94,13 @@ bot.command("login", async (ctx) => {
         reply_markup: {
             inline_keyboard: [
                 [
-                    { text: 'Login to Notion', url: `https://telegram-notes.vercel.app/login?tgId=${userid}` }
-                ]
-            ]
-        }
+                    {
+                        text: "Login to Notion",
+                        url: `https://telegram-notes.vercel.app/login?tgId=${userid}`,
+                    },
+                ],
+            ],
+        },
     });
 });
 bot.on("audio", async (ctx) => {
@@ -190,19 +193,37 @@ bot.command("selectNotionDb", async (ctx) => {
             const notion = new client_1.Client({ auth: user.token });
             (async () => {
                 const response = await notion.search({
-                    query: 'External tasks',
                     filter: {
-                        value: 'database',
-                        property: 'object'
+                        value: "database",
+                        property: "object",
                     },
                     sort: {
-                        direction: 'ascending',
-                        timestamp: 'last_edited_time'
+                        direction: "ascending",
+                        timestamp: "last_edited_time",
                     },
                 });
                 ctx.reply("Select a database to use");
+                console.log(response);
                 response.results.forEach((page) => {
-                    ctx.reply(page.id + " " + page.object);
+                    (async () => {
+                        const databaseId = page.id;
+                        const response = await notion.databases.retrieve({
+                            database_id: databaseId,
+                        });
+                        console.log(response);
+                        ctx.replyWithHTML(`<b>${response.title[0].plain_text}</b>`, {
+                            reply_markup: {
+                                inline_keyboard: [
+                                    [
+                                        {
+                                            text: "Select",
+                                            callback_data: `selectDb:${databaseId}`,
+                                        },
+                                    ],
+                                ],
+                            },
+                        });
+                    })();
                 });
             })();
         }
@@ -213,6 +234,12 @@ bot.command("selectNotionDb", async (ctx) => {
         .catch((error) => {
         console.error(error);
     });
+});
+bot.action(/^selectDb:(.+)$/, async (ctx) => {
+    const databaseId = ctx.match[1];
+    const userId = ctx.from?.id;
+    // TODO: Save the selected database ID for the user
+    await ctx.reply(`You selected database ${databaseId}`);
 });
 bot.command("cleartemp", (ctx) => {
     if (!exports.isTempBeingUsed.inuse) {
