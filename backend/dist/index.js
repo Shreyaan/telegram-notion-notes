@@ -37,6 +37,19 @@ fluent_ffmpeg_1.default.setFfmpegPath(ffmpeg_1.path);
 const processAudioFileToText_1 = require("./processAudioFileToText");
 const deleteTempFolder_1 = require("./utils/deleteTempFolder");
 const sendHelpCommands_1 = require("./utils/sendHelpCommands");
+const mongoose_1 = __importDefault(require("mongoose"));
+const User_1 = __importDefault(require("./models/User"));
+if (process.env.MONGODB_URI === undefined) {
+    throw new Error("MONGODB_URI not defined");
+}
+mongoose_1.default
+    .connect(process.env.MONGODB_URI, {})
+    .then(() => {
+    console.log("Connected to MongoDB");
+})
+    .catch((err) => {
+    console.log("Error connecting to MongoDB: ", err.message);
+});
 const bot = new telegraf_1.Telegraf(process.env.BOT_TOKEN);
 exports.isTempBeingUsed = {
     inuse: false,
@@ -46,6 +59,32 @@ bot.start((ctx) => {
 });
 bot.help((ctx) => {
     (0, sendHelpCommands_1.sendHelpCommands)(ctx);
+});
+//login
+bot.command("login", async (ctx) => {
+    let userid = ctx.from.id;
+    let username = ctx.from.username;
+    if (userid === undefined || username === undefined) {
+        ctx.reply("Something went wrong");
+        return;
+    }
+    //check if user exists
+    // Find a user by their email
+    User_1.default.findOne({ telegramId: userid })
+        .then(async (user) => {
+        if (user) {
+        }
+        else {
+            const user = new User_1.default({
+                telegramId: userid,
+            });
+            await user.save();
+        }
+    })
+        .catch((error) => {
+        console.error(error);
+    });
+    ctx.replyWithHTML(`Please <a href="https://anosher.com/${userid}">login with Notion</a> to use this bot.`);
 });
 bot.on("voice", async (ctx) => {
     try {
