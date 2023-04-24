@@ -27,7 +27,7 @@ export function loginController(
     });
 
   ctx.replyWithHTML(
-    `Please login with Notion using this button to use this bot. After logging in, please use /selectNotionDb command to select a Notion database to save your notes to.`,
+    `Please login with Notion using this button to use this bot. After logging in, please use /selectnotiondb command to select a Notion database to save your notes to.`,
     {
       reply_markup: {
         inline_keyboard: [

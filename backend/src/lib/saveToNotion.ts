@@ -61,7 +61,7 @@ export function saveToNotion(
     })();
   } catch (error) {
     ctx.reply(
-      "Something went wrong. Please check you have set your db id correctly. Send /selectNotionDb to set your db id"
+      "Something went wrong. Please check you have set your db id correctly. Send /selectnotiondb to set your db id"
     );
   }
 }

@@ -54,7 +54,7 @@ bot.command("login", async (ctx) => {
   let username = ctx.from.username || ctx.from.first_name;
   console.log(userid, username);
 
-  if (userid === undefined ) {
+  if (userid === undefined) {
     ctx.reply("Something went wrong");
     return;
   }
@@ -147,7 +147,7 @@ bot.on("voice", async (ctx) => {
             //save to notion
             if (user.pageId === undefined) {
               return ctx.reply(
-                "Save to notion failed because you have not selected a Notion database yet. Please select a database using /selectNotionDb command"
+                "Save to notion failed because you have not selected a Notion database yet. Please select a database using /selectnotiondb command"
               );
             } else if (typeof user.pageId === "string") {
               saveToNotion(user, textToSend, ctx);
@@ -175,7 +175,7 @@ bot.on("voice", async (ctx) => {
   }
 });
 
-bot.command("selectNotionDb", async (ctx) => {
+bot.command("selectnotiondb", async (ctx) => {
   let userid = ctx.from.id;
   User.findOne({ telegramId: userid })
     .then(async (user) => {

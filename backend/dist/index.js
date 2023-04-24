@@ -138,7 +138,7 @@ bot.on("voice", async (ctx) => {
                     ctx.telegram.sendMessage(ctx.message.chat.id, (0, generateOutputForMsg_1.generateOutputForMsg)(textToSend));
                     //save to notion
                     if (user.pageId === undefined) {
-                        return ctx.reply("Save to notion failed because you have not selected a Notion database yet. Please select a database using /selectNotionDb command");
+                        return ctx.reply("Save to notion failed because you have not selected a Notion database yet. Please select a database using /selectnotiondb command");
                     }
                     else if (typeof user.pageId === "string") {
                         (0, saveToNotion_1.saveToNotion)(user, textToSend, ctx);
@@ -163,7 +163,7 @@ bot.on("voice", async (ctx) => {
         ctx.telegram.sendMessage(ctx.message.chat.id, "Something went wrong");
     }
 });
-bot.command("selectNotionDb", async (ctx) => {
+bot.command("selectnotiondb", async (ctx) => {
     let userid = ctx.from.id;
     User_1.default.findOne({ telegramId: userid })
         .then(async (user) => {

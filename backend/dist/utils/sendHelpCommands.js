@@ -7,7 +7,7 @@ function sendHelpCommands(ctx) {
     \n
 to use this bot you need to login using /login command.
 
-/selectNotionDb command to select a Notion database to save your notes to.`);
+/selectnotiondb command to select a Notion database to save your notes to.`);
 }
 exports.sendHelpCommands = sendHelpCommands;
 //# sourceMappingURL=sendHelpCommands.js.map
