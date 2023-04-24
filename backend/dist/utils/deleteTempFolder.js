@@ -9,7 +9,7 @@ const path = require("path");
 function deleteTempFolder() {
     try {
         const tempDir = "./temp";
-        const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+        const cutoffTime = Date.now() - 60 * 1000; // 24 hours ago
         const subdirs = fs_1.default
             .readdirSync(tempDir, { withFileTypes: true })
             .filter((dirent) => dirent.isDirectory())

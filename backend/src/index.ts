@@ -12,7 +12,6 @@ import { processAudioFileToText } from "./processAudioFileToText";
 import { deleteTempFolder } from "./utils/deleteTempFolder";
 import { sendHelpCommands } from "./utils/sendHelpCommands";
 
-
 const bot: Telegraf<Context<Update>> = new Telegraf(
   process.env.BOT_TOKEN as string
 );
@@ -43,24 +42,8 @@ bot.on("voice", async (ctx) => {
 });
 
 bot.command("cleartemp", (ctx) => {
-  try {
-    const tempDir = "./temp";
-    const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
-    const subdirs = fs
-      .readdirSync(tempDir, { withFileTypes: true })
-      .filter((dirent) => dirent.isDirectory())
-      .map((dirent) => dirent.name);
-    subdirs.forEach((subdir) => {
-      const subdirPath = path.join(tempDir, subdir);
-      const stats = fs.statSync(subdirPath);
-      const lastModifiedTime = stats.mtime.getTime();
-      if (true) {
-        fs.rmdirSync(subdirPath, { recursive: true });
-        console.log(`Deleted directory: ${subdirPath}`);
-      }
-    });
-  } catch (err: any) {
-    console.error(`Error deleting temporary directory: ${err.message}`);
+  if (!isTempBeingUsed.inuse) {
+    deleteTempFolder();
   }
   ctx.reply("Temp folder cleared");
 });

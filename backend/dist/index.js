@@ -30,7 +30,6 @@ exports.isTempBeingUsed = void 0;
 const dotenv = __importStar(require("dotenv")); // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
 const telegraf_1 = require("telegraf");
-const fs_1 = __importDefault(require("fs"));
 const path = require("path");
 const ffmpeg_1 = require("@ffmpeg-installer/ffmpeg");
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
@@ -60,25 +59,8 @@ bot.on("voice", async (ctx) => {
     }
 });
 bot.command("cleartemp", (ctx) => {
-    try {
-        const tempDir = "./temp";
-        const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
-        const subdirs = fs_1.default
-            .readdirSync(tempDir, { withFileTypes: true })
-            .filter((dirent) => dirent.isDirectory())
-            .map((dirent) => dirent.name);
-        subdirs.forEach((subdir) => {
-            const subdirPath = path.join(tempDir, subdir);
-            const stats = fs_1.default.statSync(subdirPath);
-            const lastModifiedTime = stats.mtime.getTime();
-            if (true) {
-                fs_1.default.rmdirSync(subdirPath, { recursive: true });
-                console.log(`Deleted directory: ${subdirPath}`);
-            }
-        });
-    }
-    catch (err) {
-        console.error(`Error deleting temporary directory: ${err.message}`);
+    if (!exports.isTempBeingUsed.inuse) {
+        (0, deleteTempFolder_1.deleteTempFolder)();
     }
     ctx.reply("Temp folder cleared");
 });
