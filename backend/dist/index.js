@@ -163,6 +163,57 @@ bot.on("voice", async (ctx) => {
                     ctx.telegram.sendMessage(ctx.message.chat.id, "Processing voice message ...");
                     let textToSend = await (0, processAudioFileToText_1.processAudioFileToText)(ctx);
                     ctx.telegram.sendMessage(ctx.message.chat.id, textToSend);
+                    //save to notion
+                    if (user.pageId === undefined) {
+                        return ctx.reply("Please set your db id first. Send /selectNotionDb to set your page id.");
+                    }
+                    else if (typeof user.pageId === "string") {
+                        const notion = new client_1.Client({ auth: user.token });
+                        try {
+                            (async () => {
+                                if (user.pageId === undefined) {
+                                    return;
+                                }
+                                const response = await notion.pages.create({
+                                    parent: {
+                                        type: "database_id",
+                                        database_id: user.pageId,
+                                    },
+                                    properties: {
+                                        Name: {
+                                            title: [
+                                                {
+                                                    text: {
+                                                        content: textToSend.substring(0, 30),
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                    children: [
+                                        {
+                                            object: "block",
+                                            paragraph: {
+                                                rich_text: [
+                                                    {
+                                                        text: {
+                                                            content: textToSend
+                                                        },
+                                                    },
+                                                ],
+                                                color: "default",
+                                            },
+                                        },
+                                    ],
+                                });
+                                console.log(121323, response);
+                                ctx.reply("added to notion");
+                            })();
+                        }
+                        catch (error) {
+                            ctx.reply("Something went wrong. Please check you have set your db id correctly. Send /selectNotionDb to set your db id");
+                        }
+                    }
                     if (user.isPremium === false) {
                         user.numberOfUses += 1;
                         await user.save();
@@ -207,9 +258,9 @@ bot.command("selectNotionDb", async (ctx) => {
                 response.results.forEach((page) => {
                     (async () => {
                         const databaseId = page.id;
-                        const response = await notion.databases.retrieve({
+                        const response = (await notion.databases.retrieve({
                             database_id: databaseId,
-                        });
+                        }));
                         console.log(response);
                         ctx.replyWithHTML(`<b>${response.title[0].plain_text}</b>`, {
                             reply_markup: {
@@ -240,8 +291,7 @@ bot.action(/^selectDb:(.+)$/, async (ctx) => {
     const userId = ctx.from?.id;
     // TODO: Save the selected database ID for the user
     try {
-        User_1.default.findOne({ telegramId: userId })
-            .then(async (user) => {
+        User_1.default.findOne({ telegramId: userId }).then(async (user) => {
             if (user?.token) {
                 user.pageId = databaseId;
                 await user.save();

@@ -27,7 +27,7 @@ export async function generateText(inputFileName: any) {
       { role: "system", content: "You are a helpful assistant." },
       {
         role: "user",
-        content: `please summarize this text and give it in bullet points \n ${textToSummarize},`,
+        content: `please summarize this text and give it in bullet points. also generate a title for it. give title first then in next line give summary. Text- \n ${textToSummarize},`,
       },
     ],
   });
