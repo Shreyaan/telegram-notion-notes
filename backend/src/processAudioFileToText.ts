@@ -102,6 +102,8 @@ export async function processAudioFileToText(
     );
     const { data: voiceMessageStream } = await axios(fileUrl, {
       responseType: "stream",
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
     });
 
     let messageId = generateMessageidforFOlderName(ctx);
