@@ -1,7 +1,8 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { type NextApiRequest, type NextApiResponse } from "next";
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 dotenv.config();
 import axios from "axios";
+import qs from "qs";
 
 export default async function handler(
   req: NextApiRequest,
@@ -43,15 +44,40 @@ export default async function handler(
         },
       }
     );
+    console.log(response.data);
+    type ResponseData = {
+      access_token: string;
+      token_type: string;
+      bot_id: string;
+      workspace_name?: string;
+      workspace_icon: null;
+      workspace_id: string;
+      owner: {
+        type: string;
+        user: {
+          object: string;
+          id: string;
+          name?: string;
+          avatar_url: null;
+          type: string;
+          person: ObjectConstructor[];
+        };
+      };
+      duplicated_template_id: null;
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const { access_token } = response.data;
-
+    const data = response.data as ResponseData;
+    const access_token = data.access_token;
+    const name = data.owner.user.name || data.workspace_name;
     console.log(access_token, req.query.id);
 
-    // TODO: Save the access token to the database or session.
+    const queryParams = qs.stringify({
+      access_token,
+      name,
+    });
 
-    res.redirect("/"); // Redirect the user to the home page.
+    res.redirect(`/final?${queryParams}`); 
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred while logging in.");
