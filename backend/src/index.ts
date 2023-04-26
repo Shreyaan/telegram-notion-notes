@@ -194,14 +194,14 @@ bot.command("selectnotiondb", async (ctx) => {
             },
           });
           ctx.reply("Select a database to use");
-          console.log(response);
+         
           response.results.forEach((page) => {
             (async () => {
               const databaseId = page.id;
               const response = (await notion.databases.retrieve({
                 database_id: databaseId,
               })) as unknown as NotionDatabase;
-              console.log(response);
+             
               ctx.replyWithHTML(`<b>${response.title[0].plain_text}</b>`, {
                 reply_markup: {
                   inline_keyboard: [
